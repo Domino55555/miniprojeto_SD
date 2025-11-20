@@ -1,7 +1,9 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, json
 
 app = Flask(__name__)
 
+with open("Items/produtos.json", "r") as f:
+    items_prices = json.load(f)
 
 orders_db = {}
 next_id = 1
@@ -14,8 +16,29 @@ def create_order():
     data = request.get_json()
     
     # Validação 
-    if not data or "user_id" not in data or "items" not in data or "total" not in data:
+    if not data or "user_id" not in data or "items" not in data:
         return jsonify({"error": "Missing fields"}), 400
+    
+     # Aceitar lista ou string separada por vírgulas
+    items_input = data["items"]
+    if isinstance(items_input, str):
+        items_list = [i.strip() for i in items_input.split(",")] if "," in items_input else [items_input.strip()]
+    elif isinstance(items_input, list):
+        items_list = items_input
+    else:
+        return jsonify({"error": "Items têm que ser separados por virgulas."}), 400
+    
+
+    total = 0
+    unknown_items = []
+    for item in data["items"]:
+        if item in items_prices:
+            total += items_prices[item]
+        else:
+            unknown_items.append(item)
+    
+    if unknown_items:
+        return jsonify({"error": "Unknown items", "items": unknown_items}), 400
 
     order_id = str(next_id)
     next_id += 1
@@ -23,8 +46,8 @@ def create_order():
     order = {
         "id": order_id,
         "user_id": data["user_id"],
-        "items": data["items"],
-        "total": data["total"],
+        "items": items_list,
+        "total": total,
         "status": "pending"
     }
 
@@ -46,8 +69,7 @@ def get_order(order_id):
 def order_fields():
     fields = {
         "user_id": "ID do utilizador ",
-        "items": " lista de itens",
-        "total": "valor total da order"
+        "items": list(items_prices.keys())
     }
     return jsonify(fields)
 
