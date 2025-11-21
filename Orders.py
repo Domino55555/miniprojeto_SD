@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, json
 
 app = Flask(__name__)
 
-with open("Items/produtos.json", "r") as f:
+with open("Listas/produtos.json", "r") as f:
     items_prices = json.load(f)
 
 items_prices_norm = {k.lower(): v for k, v in items_prices.items()}
