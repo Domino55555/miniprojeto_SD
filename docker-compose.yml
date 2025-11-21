@@ -1,6 +1,20 @@
 version: "3.9"
 
 services:
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: servicos
+      MYSQL_USER: grupo3
+      MYSQL_PASSWORD: baguette
+    ports:
+      - "5423:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
   orders:
     build: ./Orders
     container_name: orders_service
@@ -9,6 +23,13 @@ services:
     volumes:
       - ./Orders:/app
     restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_USER: grupo3
+      DB_PASSWORD: baguette
+      DB_NAME: servicos
 
   notifications:
     build: ./Notifications
@@ -18,3 +39,13 @@ services:
     volumes:
       - ./Notifications:/app
     restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_USER: grupo3
+      DB_PASSWORD: baguette
+      DB_NAME: servicos
+
+volumes:
+  db_data:
