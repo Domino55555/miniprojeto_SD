@@ -22,6 +22,7 @@ services:
       - "5600:5600"
     volumes:
       - ./Orders:/app
+      - ./Listas:/app/Listas
     restart: unless-stopped
     depends_on:
       - db
