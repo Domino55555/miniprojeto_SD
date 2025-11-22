@@ -1,3 +1,5 @@
+# depois temos que mudar os logs para ficarem mais bonitos, ja tive q refazer esta meda umas 5 vezes e ja tou farto 
+
 from flask import Flask, request, jsonify
 import mysql.connector
 import json
@@ -32,8 +34,10 @@ items_prices_norm = {k.lower(): v for k, v in items_prices.items()}
 @app.route("/orders", methods=["POST"])
 def create_order():
     data = request.get_json()
+    print(f"[CREATE ORDER] Received data: {data}")
 
     if not data or "items" not in data:
+        print("[CREATE ORDER] Missing 'items' field in request")
         return jsonify({"error": "Missing items"}), 400
 
     # Aceitar string ou lista
@@ -43,6 +47,7 @@ def create_order():
     elif isinstance(items_input, list):
         items_list = items_input
     else:
+        print("[CREATE ORDER] Invalid items format")
         return jsonify({"error": "Items inválidos"}), 400
 
     conn = get_db_connection()
@@ -51,10 +56,12 @@ def create_order():
     # Buscar um utilizador (por agora apenas o primeiro)
     cursor.execute("SELECT user_id, username FROM GW LIMIT 1")
     user_row = cursor.fetchone()
+    print(f"[CREATE ORDER] Selected user: {user_row}")
 
     if not user_row:
         cursor.close()
         conn.close()
+        print("[CREATE ORDER] No users found in DB")
         return jsonify({"error": "No users found in DB"}), 500
 
     user_id = user_row["user_id"]
@@ -74,6 +81,7 @@ def create_order():
     if unknown_items:
         cursor.close()
         conn.close()
+        print(f"[CREATE ORDER] Unknown items: {unknown_items}")
         return jsonify({
             "error": "Unknown items",
             "items": unknown_items
@@ -85,13 +93,12 @@ def create_order():
         (user_id, ",".join(items_list), total, "pending")
     )
     conn.commit()
-
     order_id = cursor.lastrowid
+    print(f"[CREATE ORDER] Order created with ID {order_id} for user {username}")
 
     cursor.close()
     conn.close()
 
-    # NOTA: já não devolvemos user_id
     return jsonify({
         "order_id": order_id,
         "username": username,
@@ -106,6 +113,7 @@ def create_order():
 # ------------------------------
 @app.route("/orders", methods=["GET"])
 def list_orders():
+    print("[LIST ORDERS] Fetching all orders")
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
@@ -122,6 +130,7 @@ def list_orders():
     """)
 
     orders = cursor.fetchall()
+    print(f"[LIST ORDERS] Retrieved {len(orders)} orders")
 
     cursor.close()
     conn.close()
@@ -134,6 +143,7 @@ def list_orders():
 # ------------------------------
 @app.route("/orders/<username>", methods=["GET"])
 def get_orders_by_username(username):
+    print(f"[GET ORDERS BY USERNAME] Fetching orders for username: {username}")
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
@@ -151,6 +161,7 @@ def get_orders_by_username(username):
     """, (username,))
 
     orders = cursor.fetchall()
+    print(f"[GET ORDERS BY USERNAME] Found {len(orders)} orders for {username}")
 
     cursor.close()
     conn.close()
@@ -166,6 +177,7 @@ def get_orders_by_username(username):
 # ------------------------------
 @app.route("/orders/fields", methods=["GET"])
 def order_fields():
+    print("[ORDER FIELDS] Returning available items")
     return jsonify({
         "items": list(items_prices.keys())
     })
@@ -175,4 +187,5 @@ def order_fields():
 #           RUN
 # ------------------------------
 if __name__ == "__main__":
+    print("[STARTING SERVER] Orders service running on port 5600")
     app.run(host="0.0.0.0", port=5600)
