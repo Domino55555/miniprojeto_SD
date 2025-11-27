@@ -258,7 +258,6 @@ services:
       - "5700:5700"
     volumes:
       - ./Payments:/app
-      - ./Listas:/app/Listas   # Para produtos.json
     restart: unless-stopped
     depends_on:
       - db
