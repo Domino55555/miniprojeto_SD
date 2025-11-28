@@ -14,6 +14,9 @@ NOTIFICATIONS_URL = os.getenv("NOTIFICATIONS_URL", "http://notifications:5800")
 # Lista de tokens válidos em memória
 tokens_validos = {}
 
+# Registos pendentes de criação de conta
+pending_signups = {}
+
 # ------------------------------
 #      FUNÇÕES AUXILIARES
 # ------------------------------
@@ -54,27 +57,44 @@ def criar_conta():
     print(f"[SIGNUP] Dados recebidos: {dados}")
     username = dados.get("username")
     password = dados.get("password")
+    email = dados.get("email")
 
-    if not username or not password:
+    if not username or not password or not email:
         print("[SIGNUP] Falta username ou password")
-        return {"erro": "username e password obrigatórios"}, 400
+        return {"erro": "username, password e email obrigatórios"}, 400
 
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO GW (username, password) VALUES (%s, %s)", (username, password))
-        conn.commit()
+        cursor.execute("SELECT * FROM GW WHERE username=%s OR email=%s", (username, email))
+        existente = cursor.fetchone()
         cursor.close()
         conn.close()
-        print(f"[SIGNUP] Conta criada com sucesso para {username}")
-        return {"mensagem": f"Conta {username} criada com sucesso"}, 201
-    except mysql.connector.errors.IntegrityError:
-        print(f"[SIGNUP] Username já existe: {username}")
-        return {"erro": "Username já existe"}, 400
-    except Exception as e:
-        print(f"[SIGNUP] Erro: {e}")
-        return {"erro": str(e)}, 500
+        if existente:
+            print(f"[SIGNUP] Username ou email já existente: {username}, {email}")
+            return {"erro": "Username ou email já existente"}, 409
+        try:
+            resp = requests.post(
+                f"{NOTIFICATIONS_URL}/notifications/send_verification",
+                json={"email": email},
+                timeout=5
+            )
+            resp.raise_for_status()
+        except Exception as e:
+            print(f"[ERRO NOTIFICAÇÃO] {e}")
+            return {"erro": "Falha ao enviar email"}, 500
 
+        codigo = resp.json().get("codigo")
+        pending_signups[username] = {
+            "password": password,
+            "email": email,
+            "codigo": codigo
+        }
+
+        return {"mensagem": "Código enviado para o email. Confirme em /signup/confirm."}, 200
+
+    except Exception as e:
+        return {"erro": f"Erro interno: {str(e)}"}, 500
 # ------------------------------
 #        COMO CRIAR CONTA
 # ------------------------------
@@ -122,23 +142,59 @@ def login():
     except Exception as e:
         print(f"[LOGIN] Erro: {e}")
         return {"erro": str(e)}, 500
-
+    
 # ------------------------------
 #        LOGOUT
 # ------------------------------
 @app.route("/logout", methods=["POST"])
 def logout():
-    token = verificar_token()
-    if not token:
+    username = verificar_token()
+    if not username:
         print("[LOGOUT] Token inválido")
         return {"erro": "Token inválido"}, 401
     # Remove o token da lista de tokens válidos
-    for t, user in list(tokens_validos.items()):
-        if user == token:
-            del tokens_validos[t]
+    for token, user in list(tokens_validos.items()):
+        if user == username:
+            del tokens_validos[token]
             print(f"[LOGOUT] Token removido para {user}")
-            break
     return {"mensagem": "Sessão terminada"}, 200
+    
+# ------------------------------
+#         CONFIRMAR SIGNUP
+# ------------------------------
+@app.route("/signup/confirm", methods=["POST"])
+def confirmar_signup():
+    dados = request.get_json() or {}
+    username = dados.get("username")
+    codigo_recebido = dados.get("codigo")
+
+    if not username or not codigo_recebido:
+        return {"erro": "username e codigo obrigatórios"}, 400
+
+    registo = pending_signups.get(username)
+    if not registo:
+        return {"erro": "Não existe registo pendente para este utilizador"}, 404
+
+    if codigo_recebido != registo["codigo"]:
+        return {"erro": "Código incorreto"}, 401
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO GW (username, password, email) VALUES (%s, %s, %s)",
+            (username, registo["password"], registo["email"])
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        del pending_signups[username]
+
+        return {"mensagem": "Conta confirmada!"}, 201
+    except Exception as e:
+        return {"erro": f"Erro interno: {str(e)}"}, 500
+
 
 @app.route("/wallet", methods=["GET"])
 def get_wallet():
@@ -293,8 +349,9 @@ def pagamentos_do_cliente():
         return {"erro": "Token inválido"}, 401
 
     try:
-        print(f"[PAYMENTS ME] Chamando serviço Payments: {PAYMENTS_URL}/payments/me")
-        resp = requests.get(f"{PAYMENTS_URL}/payments/me", headers={"X-Username": username}, timeout=5)
+        # Passar o username diretamente na URL
+        print(f"[PAYMENTS ME] Chamando serviço Payments: {PAYMENTS_URL}/payments/{username}")
+        resp = requests.get(f"{PAYMENTS_URL}/payments/{username}", timeout=5)
         print(f"[PAYMENTS ME] Resposta do Payments: {resp.status_code}")
         return resp.json(), resp.status_code
     except Exception as e:
@@ -312,12 +369,9 @@ def notificacoes_do_cliente():
         return {"erro": "Token inválido"}, 401
 
     try:
-        print(f"[NOTIFICATIONS ME] Chamando serviço Notifications: {NOTIFICATIONS_URL}/notifications/me")
-        resp = requests.get(
-            f"{NOTIFICATIONS_URL}/notifications/me",
-            headers={"X-Username": username},
-            timeout=5
-        )
+        # Passar o username diretamente na URL
+        print(f"[NOTIFICATIONS ME] Chamando serviço Notifications: {NOTIFICATIONS_URL}/notifications/{username}")
+        resp = requests.get(f"{NOTIFICATIONS_URL}/notifications/{username}", timeout=5)
         print(f"[NOTIFICATIONS ME] Resposta do Notifications: {resp.status_code}")
         return resp.json(), resp.status_code
     except Exception as e:

@@ -2,8 +2,13 @@ from flask import Flask, request, jsonify
 import mysql.connector
 import json
 import os
+import requests
+
 
 app = Flask(__name__)
+
+NOTIFICATIONS_URL = os.getenv("NOTIFICATIONS_URL", "http://notifications:5800")
+
 
 # Configuração da DB
 DB_HOST = os.getenv("DB_HOST", "localhost")
@@ -47,11 +52,13 @@ def create_order():
         print("[CREATE ORDER] user_id obrigatório")
         return jsonify({"error": "user_id obrigatório"}), 400
 
+    # Conectar ao banco
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    print(f"[CREATE ORDER] Buscando username para user_id: {user_id}")
-    cursor.execute("SELECT username FROM GW WHERE user_id=%s", (user_id,))
+    # Buscar username e email do usuário
+    print(f"[CREATE ORDER] Buscando username e email para user_id: {user_id}")
+    cursor.execute("SELECT username, email FROM GW WHERE user_id=%s", (user_id,))
     user_row = cursor.fetchone()
     if not user_row:
         print("[CREATE ORDER] Utilizador não encontrado")
@@ -60,9 +67,10 @@ def create_order():
         return jsonify({"error": "Utilizador não encontrado"}), 404
 
     username = user_row["username"]
-    print(f"[CREATE ORDER] Username encontrado: {username}")
+    email = user_row["email"]
+    print(f"[CREATE ORDER] Username: {username}, Email: {email}")
 
-    # Calcular total...
+    # Calcular total
     total = 0
     unknown_items = []
     for item in items_list:
@@ -78,7 +86,7 @@ def create_order():
         conn.close()
         return jsonify({"error": "Unknown items", "items": unknown_items}), 400
 
-    # Inserir order
+    # Inserir order no banco
     cursor.execute(
         "INSERT INTO Orders (user_id, items, total, status) VALUES (%s, %s, %s, %s)",
         (user_id, ",".join(items_list), total, "pending")
@@ -89,6 +97,26 @@ def create_order():
     conn.close()
 
     print(f"[CREATE ORDER] Order criada com sucesso: {order_id}")
+
+    # Notificar serviço de notifications
+    try:
+        response = requests.post(
+            f"{NOTIFICATIONS_URL}/notifications/order_created",
+            json={
+                "email": email,
+                "username": username,
+                "order_id": order_id,
+                "items": items_list,
+                "total": total,
+                "user_id": user_id
+            },
+            timeout=5
+        )
+        response.raise_for_status()
+        print(f"[CREATE ORDER] Notificação enviada para {NOTIFICATIONS_URL}")
+    except Exception as e:
+        print(f"[CREATE ORDER] Falha ao notificar notifications: {e}")
+
     return jsonify({
         "order_id": order_id,
         "username": username,
@@ -96,6 +124,7 @@ def create_order():
         "total": total,
         "status": "pending"
     }), 201
+
 
 
 # ------------------------------
@@ -180,8 +209,8 @@ def order_fields():
 def cancelar_order():
     data = request.get_json()
     print(f"[CANCEL ORDER] Dados recebidos: {data}")
+
     if not data or "order_id" not in data:
-        print("[CANCEL ORDER] order_id obrigatório")
         return jsonify({"error": "order_id obrigatório"}), 400
 
     order_id = data["order_id"]
@@ -189,29 +218,58 @@ def cancelar_order():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    print(f"[CANCEL ORDER] Verificando order_id: {order_id}")
-    cursor.execute("SELECT * FROM Orders WHERE order_id=%s", (order_id,))
+    # Buscar ordem + utilizador + email
+    cursor.execute("""
+        SELECT 
+            Orders.order_id, Orders.total, Orders.status, Orders.items,
+            GW.user_id, GW.wallet, GW.email, GW.username
+        FROM Orders
+        JOIN GW ON Orders.user_id = GW.user_id
+        WHERE Orders.order_id = %s
+    """, (order_id,))
     order = cursor.fetchone()
+
     if not order:
-        print("[CANCEL ORDER] Order não encontrada")
         cursor.close()
         conn.close()
-        return jsonify({"error": "Order não encontrada"}), 404
+        return jsonify({"error": "Order not found"}), 404
 
     if order["status"].lower() != "pending":
-        print(f"[CANCEL ORDER] Order não pode ser cancelada, status: {order['status']}")
         cursor.close()
         conn.close()
         return jsonify({
             "error": f"Order não pode ser cancelada porque está '{order['status']}'"
         }), 400
 
+    # Atualizar status para 'cancelled'
     cursor.execute("UPDATE Orders SET status='cancelled' WHERE order_id=%s", (order_id,))
     conn.commit()
+
+    # Guardar dados ANTES de fechar ligação
+    email = order["email"]
+    user_id = order["user_id"]
+    total = float(order["total"])
+
     cursor.close()
     conn.close()
 
-    print(f"[CANCEL ORDER] Order cancelada com sucesso: {order_id}")
+    # Enviar notificação AGORA fora da DB
+    try:
+        r = requests.post(
+            f"{NOTIFICATIONS_URL}/notifications/status",
+            json={
+                "email": email,
+                "order_id": order_id,
+                "status": "cancelled",
+                "total": total,
+                "user_id": user_id
+            },
+            timeout=5
+        )
+        print(f"[CANCEL ORDER] Notificação enviada: {r.status_code}")
+    except Exception as e:
+        print(f"[CANCEL ORDER] Erro ao notificar Notifications: {e}")
+
     return jsonify({
         "success": True,
         "order_id": order_id,
