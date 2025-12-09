@@ -5,8 +5,14 @@ import os
 import mysql.connector
 import random
 import requests
+from prometheus_flask_exporter import PrometheusMetrics
+from prometheus_client import Summary, Gauge
+import time
+# Metrica de latencia: medida em segundos
+REQUEST_LATENCY_GAUGE = Gauge('request_latency_seconds', 'Latência da última request', ['endpoint'])
 
 app = Flask(__name__)
+metrics = PrometheusMetrics(app)  # adiciona métricas automaticamente
 
 ORDERS_URL = os.getenv("ORDERS_URL", "http://orders:5600")
 PAYMENTS_URL = os.getenv("PAYMENTS_URL", "http://payments:5700")
@@ -16,6 +22,16 @@ DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_USER = os.getenv("DB_USER", "grupo3")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "baguette")
 DB_NAME = os.getenv("DB_NAME", "servicos")
+
+@app.before_request
+def before_request():
+    request.start_time = time.time()
+
+@app.after_request
+def after_request(response):
+    endpoint = request.endpoint or "unknown"
+    REQUEST_LATENCY_GAUGE.labels(endpoint=endpoint).set(time.time() - request.start_time)
+    return response
 
 # Função para ligar à base de dados MySQL
 def obter_conexao_bd():

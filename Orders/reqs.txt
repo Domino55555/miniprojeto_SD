@@ -1,3 +1,5 @@
 flask
 requests
 mysql-connector-python
+prometheus-flask-exporter
+prometheus_client

@@ -1,0 +1,27 @@
+global:
+  scrape_interval: 10s
+
+scrape_configs:
+  - job_name: 'orders_service'
+    static_configs:
+      - targets: ['orders_service:5600']
+
+  - job_name: 'payments_service'
+    static_configs:
+      - targets: ['payments_service:5700']
+
+  - job_name: 'notifications_service'
+    static_configs:
+      - targets: ['notifications_service:5800']
+
+  - job_name: 'gateway'
+    static_configs:
+      - targets: ['gw_service:5863']
+
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+  - job_name: 'docker'
+    static_configs:
+      - targets: ['192.168.229.76:9323']

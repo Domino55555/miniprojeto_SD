@@ -3,8 +3,15 @@ import requests
 import os
 import uuid
 import mysql.connector
+from prometheus_flask_exporter import PrometheusMetrics
+import time
+from prometheus_client import Summary, Histogram
+
+# Metrica de latencia: medida em segundos
+REQUEST_LATENCY_HIST = Histogram('request_latency_seconds_hist', 'Latência das requests', ['endpoint'])
 
 app = Flask(__name__)
+metrics = PrometheusMetrics(app)  # adiciona métricas automaticamente
 
 # URLs dos serviços internos
 ORDERS_URL = os.getenv("ORDERS_URL", "http://orders:5600")
@@ -16,6 +23,18 @@ tokens_validos = {}
 
 # Armazenamento em memória dos registos pendentes de criação de conta
 pending_signups = {}
+
+
+@app.before_request
+def before_request():
+    request.start_time = time.time()
+
+@app.after_request
+def after_request(response):
+    endpoint = request.endpoint or "unknown"
+    REQUEST_LATENCY_HIST.labels(endpoint=endpoint).observe(time.time() - request.start_time)
+    return response
+
 
 # Função para obter ligação à base de dados MySQL
 def obter_conexao_bd():
