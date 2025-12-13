@@ -19,7 +19,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 3,
+  "id": 2,
   "links": [],
   "panels": [
     {
@@ -86,7 +86,7 @@
               }
             ]
           },
-          "unit": "ms"
+          "unit": "s"
         },
         "overrides": []
       },
@@ -120,14 +120,14 @@
             "uid": "af6ikdsy96bcwd"
           },
           "editorMode": "builder",
-          "expr": "sum(rate(request_latency_seconds_payments_hist_sum{job=\"payments_service\"}[5m])) / (sum(rate(request_latency_seconds_payments_hist_count{job=\"payments_service\"}[5m])))",
+          "expr": "sum(rate(request_latency_seconds_orders_hist_sum{instance=\"orders_service:5600\"}[5m])) / (sum(rate(request_latency_seconds_orders_hist_count{instance=\"orders_service:5600\"}[5m])))",
           "instant": false,
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Lâtencia do Payments",
+      "title": "Lâtencia do Orders",
       "transparent": true,
       "type": "timeseries"
     },
@@ -227,9 +227,9 @@
             "type": "prometheus",
             "uid": "af6ikdsy96bcwd"
           },
-          "editorMode": "code",
+          "editorMode": "builder",
           "exemplar": false,
-          "expr": "sum by (path) (increase(flask_http_request_duration_seconds_count{path=\"/payments\"}[$__rate_interval])) / 2",
+          "expr": "increase(flask_http_request_duration_seconds_count{path=\"/orders\"}[$__rate_interval])",
           "format": "time_series",
           "instant": false,
           "legendFormat": "{{method}} {{path}}",
@@ -241,8 +241,34 @@
             "type": "prometheus",
             "uid": "af6ikdsy96bcwd"
           },
+          "editorMode": "builder",
+          "expr": "increase(flask_http_request_duration_seconds_count{path=\"/orders/fields\"}[$__rate_interval])",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "{{method}} {{path}}",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "af6ikdsy96bcwd"
+          },
+          "editorMode": "builder",
+          "expr": "increase(flask_http_request_duration_seconds_count{path=\"/orders/cancel\"}[$__rate_interval])",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "{{method}} {{path}}",
+          "range": true,
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "af6ikdsy96bcwd"
+          },
           "editorMode": "code",
-          "expr": "increase(\n  flask_http_request_duration_seconds_count{\n    path=~\"/payments/.+\",\n    path!=\"/payments/me\"\n  }[$__rate_interval]\n)",
+          "expr": "increase(\n  flask_http_request_duration_seconds_count{\n    path=~\"/orders/.+\",\n    path!=\"/orders/cancel\",\n    path!=\"/orders/fields\",\n    path!=\"/orders/new\"\n  }[$__rate_interval]\n)",
           "hide": false,
           "instant": false,
           "legendFormat": "{{method}} {{path}}",
@@ -402,7 +428,7 @@
           },
           "direction": "backward",
           "editorMode": "builder",
-          "expr": "{container=\"payments_service\"} |= `GET` or `POST`",
+          "expr": "{container=\"orders_service\"} |= `GET` or `POST`",
           "queryType": "range",
           "refId": "A"
         }
@@ -533,7 +559,7 @@
           },
           "direction": "backward",
           "editorMode": "builder",
-          "expr": "{container=\"payments_service\"} |~ ` 4[0-9][0-9] | 5[0-9][0-9] `",
+          "expr": "{container=\"orders_service\"} |~ ` 4[0-9][0-9] | 5[0-9][0-9] `",
           "queryType": "range",
           "refId": "A"
         }
@@ -556,7 +582,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Serviço Payments",
-  "uid": "ad6s94d",
-  "version": 6
+  "title": "Serviço Orders",
+  "uid": "ad6s94e",
+  "version": 11
 }
