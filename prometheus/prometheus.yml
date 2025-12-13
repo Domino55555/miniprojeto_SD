@@ -21,7 +21,9 @@ scrape_configs:
   - job_name: 'cadvisor'
     static_configs:
       - targets: ['cadvisor:8080']
+    scrape_interval: 5s    # <- intervalo pequeno para live updates
+    scrape_timeout: 5s
 
   - job_name: 'docker'
     static_configs:
-      - targets: ['192.168.229.76:9323']
+      - targets: ['192.168.1.80:9323']
