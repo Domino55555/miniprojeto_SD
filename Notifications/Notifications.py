@@ -8,20 +8,33 @@ import requests
 from prometheus_flask_exporter import PrometheusMetrics
 from prometheus_client import Summary, Histogram
 import time
+
 # Metrica de latencia: medida em segundos
 REQUEST_LATENCY_HIST = Histogram('request_latency_seconds_notifications_hist', 'Latência das requests', ['endpoint'])
 
 app = Flask(__name__)
 metrics = PrometheusMetrics(app)  # adiciona métricas automaticamente
 
+# URLs dos outros serviços
 ORDERS_URL = os.getenv("ORDERS_URL", "http://orders:5600")
 PAYMENTS_URL = os.getenv("PAYMENTS_URL", "http://payments:5700")
 
 # Configuração da Base de Dados
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_USER = os.getenv("DB_USER", "grupo3")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "baguette")
-DB_NAME = os.getenv("DB_NAME", "servicos")
+DB_HOST = os.getenv("DB_HOST")
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_NAME = os.getenv("DB_NAME")
+
+if not DB_PASSWORD:
+    raise RuntimeError("DB_PASSWORD não definida!")
+
+# Configuração do Email
+EMAIL_REMETENTE = os.getenv("EMAIL_REMETENTE")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+
+if not EMAIL_PASSWORD or not EMAIL_REMETENTE:
+    raise RuntimeError("Credenciais de email não definidas!")
+
 
 @app.before_request
 def before_request():
@@ -44,10 +57,6 @@ def obter_conexao_bd():
         auth_plugin="mysql_native_password"
     )
 
-# Configuração do Email
-EMAIL_REMETENTE = "weather2travel.senhas@gmail.com"
-SENHA_APP = "ehbf gvdz uzbd pcuz"
-
 # Função para enviar email
 def enviar_email(destino, assunto, mensagem):
     try:
@@ -58,7 +67,7 @@ def enviar_email(destino, assunto, mensagem):
         msg.set_content(mensagem)
 
         with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=5) as smtp:
-            smtp.login(EMAIL_REMETENTE, SENHA_APP)
+            smtp.login(EMAIL_REMETENTE, EMAIL_PASSWORD)
             smtp.send_message(msg)
 
         print(f"[EMAIL ENVIADO] Para {destino} | {assunto}")

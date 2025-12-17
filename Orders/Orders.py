@@ -15,12 +15,6 @@ metrics = PrometheusMetrics(app)  # adiciona métricas automaticamente
 # URL do serviço de notificações
 NOTIFICATIONS_URL = os.getenv("NOTIFICATIONS_URL", "http://notifications:5800")
 
-# Configuração da Base de Dados
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_USER = os.getenv("DB_USER", "grupo3")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "baguette")
-DB_NAME = os.getenv("DB_NAME", "servicos")
-
 @app.before_request
 def before_request():
     request.start_time = time.time()
@@ -31,14 +25,24 @@ def after_request(response):
     REQUEST_LATENCY_HIST.labels(endpoint=endpoint).observe(time.time() - request.start_time)
     return response
 
-# Função para conectar à base de dados MySQL
+# Configuração da Base de Dados
+DB_HOST = os.getenv("DB_HOST")
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_NAME = os.getenv("DB_NAME")
+
+if not DB_PASSWORD:
+    raise RuntimeError("DB_PASSWORD não definida!")
+
+# Função para ligar à base de dados usando os segredos
 def obter_conexao_bd():
     print("[BD] A abrir ligação à base de dados")
     return mysql.connector.connect(
         host=DB_HOST,
         user=DB_USER,
         password=DB_PASSWORD,
-        database=DB_NAME
+        database=DB_NAME,
+        auth_plugin='mysql_native_password'
     )
 
 # Carregar ficheiro de produtos e preços

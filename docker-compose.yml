@@ -220,11 +220,8 @@ services:
     image: mysql:8.0
     container_name: mysql_db
     restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: servicos
-      MYSQL_USER: grupo3
-      MYSQL_PASSWORD: baguette
+    env_file:
+      - ./.env
     ports:
       - "5423:3306"
     volumes:
@@ -243,11 +240,8 @@ services:
     restart: unless-stopped
     depends_on:
       - db
-    environment:
-      DB_HOST: db
-      DB_USER: grupo3
-      DB_PASSWORD: baguette
-      DB_NAME: servicos
+    env_file:
+      - ./.env
     networks:
       - loki
 
@@ -261,11 +255,8 @@ services:
     restart: unless-stopped
     depends_on:
       - db
-    environment:
-      DB_HOST: db
-      DB_USER: grupo3
-      DB_PASSWORD: baguette
-      DB_NAME: servicos
+    env_file:
+      - ./.env
     networks:
       - loki
 
@@ -279,11 +270,8 @@ services:
     restart: unless-stopped
     depends_on:
       - db
-    environment:
-      DB_HOST: db
-      DB_USER: grupo3
-      DB_PASSWORD: baguette
-      DB_NAME: servicos
+    env_file:
+      - ./.env
     networks:
       - loki
 
@@ -291,7 +279,7 @@ services:
     build: ./GW        
     container_name: gw_service
     ports:
-      - "5863:5863"    # porta do Gateway
+      - "5863:5863"
     volumes:
       - ./GW:/app
     restart: unless-stopped
@@ -300,10 +288,8 @@ services:
       - payments
       - notifications
       - db
-    environment:
-      ORDERS_URL: http://orders_service:5600
-      PAYMENTS_URL: http://payments_service:5700
-      NOTIFICATIONS_URL: http://notifications_service:5800
+    env_file:
+      - ./.env
     networks:
       - loki
 
