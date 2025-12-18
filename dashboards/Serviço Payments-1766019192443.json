@@ -19,7 +19,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 1,
+  "id": 14,
   "links": [],
   "panels": [
     {
@@ -119,15 +119,15 @@
             "type": "prometheus",
             "uid": "af6ikdsy96bcwd"
           },
-          "editorMode": "code",
-          "expr": "sum(rate(request_latency_seconds_gateway_hist_sum{instance=\"gw_service:5863\"}[$__rate_interval])) / (sum(rate(request_latency_seconds_gateway_hist_count{instance=\"gw_service:5863\"}[$__rate_interval])))",
+          "editorMode": "builder",
+          "expr": "sum(rate(request_latency_seconds_payments_hist_sum{job=\"payments_service\"}[5m])) / (sum(rate(request_latency_seconds_payments_hist_count{job=\"payments_service\"}[5m])))",
           "instant": false,
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Lâtencia do GW",
+      "title": "Lâtencia do Payments",
       "transparent": true,
       "type": "timeseries"
     },
@@ -229,7 +229,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum by (path) (increase(flask_http_request_duration_seconds_count{path=\"/\"}[$__rate_interval]))\n",
+          "expr": "sum by (path) (increase(flask_http_request_duration_seconds_count{path=\"/payments\"}[$__rate_interval])) / 2.4",
           "format": "time_series",
           "instant": false,
           "legendFormat": "{{method}} {{path}}",
@@ -242,69 +242,276 @@
             "uid": "af6ikdsy96bcwd"
           },
           "editorMode": "code",
-          "expr": "sum by (path) (increase(flask_http_request_duration_seconds_count{path=\"/orders/me\"}[$__rate_interval]))",
+          "expr": "sum by (path) (increase(\n  flask_http_request_duration_seconds_count{\n    path=~\"/payments/me\",\n  }[$__rate_interval]\n)) / 1.2",
           "hide": false,
           "instant": false,
           "legendFormat": "{{method}} {{path}}",
           "range": true,
           "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "af6ikdsy96bcwd"
-          },
-          "editorMode": "code",
-          "expr": "sum by (path) (increase(flask_http_request_duration_seconds_count{path=\"/orders/fields\"}[$__rate_interval]))\n",
-          "hide": false,
-          "instant": false,
-          "legendFormat": "{{method}} {{path}}",
-          "range": true,
-          "refId": "C"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "af6ikdsy96bcwd"
-          },
-          "editorMode": "code",
-          "expr": "sum by (path) (increase(flask_http_request_duration_seconds_count{path=\"/orders/new\"}[$__rate_interval]))",
-          "hide": false,
-          "instant": false,
-          "legendFormat": "{{method}} {{path}}",
-          "range": true,
-          "refId": "D"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "af6ikdsy96bcwd"
-          },
-          "editorMode": "code",
-          "expr": "sum by (path) (increase(flask_http_request_duration_seconds_count{path=\"/signup\"}[$__rate_interval]))",
-          "hide": false,
-          "instant": false,
-          "legendFormat": "{{method}} {{path}}",
-          "range": true,
-          "refId": "E"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "af6ikdsy96bcwd"
-          },
-          "editorMode": "builder",
-          "expr": "sum by (path) (increase(flask_http_request_duration_seconds_count{path=\"/logout\"}[$__rate_interval]))",
-          "hide": false,
-          "instant": false,
-          "legendFormat": "{{method}} {{path}}",
-          "range": true,
-          "refId": "G"
         }
       ],
       "title": "Número de requests",
       "transparent": true,
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "P8E80F9AEF21F6940"
+      },
+      "description": "Todos os pedidos de payments processados pelos serviços internos.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "labels"
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom.viz",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tsNs"
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom.viz",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "labelTypes"
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom.viz",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 252
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Line"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 827
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 5,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "pluginVersion": "12.2.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "P8E80F9AEF21F6940"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "{container=\"payments_service\"} |~ `\\[PROCESSAR PAGAMENTO\\]|4[0-9][0-9]|5[0-9][0-9]`",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Payments",
+      "transparent": true,
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "P8E80F9AEF21F6940"
+      },
+      "description": "Todos os logs de erros ao tentar aceder o nosso serviço.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "hideFrom": {
+              "viz": false
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "labels"
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom.viz",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tsNs"
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom.viz",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "labelTypes"
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom.viz",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "id"
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom.viz",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 188
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 4,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "pluginVersion": "12.2.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "P8E80F9AEF21F6940"
+          },
+          "direction": "backward",
+          "editorMode": "builder",
+          "expr": "{container=\"payments_service\"} |~ ` 4[0-9][0-9] | 5[0-9][0-9] `",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Erros de metodos",
+      "transparent": true,
+      "type": "table"
     },
     {
       "datasource": {
@@ -430,8 +637,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 8
+        "x": 6,
+        "y": 16
       },
       "id": 3,
       "options": {
@@ -454,143 +661,12 @@
           },
           "direction": "backward",
           "editorMode": "builder",
-          "expr": "{service_name=\"gw_service\"} |= `GET` or `POST`",
+          "expr": "{container=\"payments_service\"} |= `GET` or `POST`",
           "queryType": "range",
           "refId": "A"
         }
       ],
       "title": "Logs do serviço",
-      "transparent": true,
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "loki",
-        "uid": "P8E80F9AEF21F6940"
-      },
-      "description": "Todos os logs de erros ao tentar aceder o nosso serviço.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "footer": {
-              "reducers": []
-            },
-            "hideFrom": {
-              "viz": false
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "labels"
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom.viz",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "tsNs"
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom.viz",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "labelTypes"
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom.viz",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "id"
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom.viz",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Time"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 188
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 8
-      },
-      "id": 4,
-      "options": {
-        "cellHeight": "sm",
-        "showHeader": true
-      },
-      "pluginVersion": "12.2.1",
-      "targets": [
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "P8E80F9AEF21F6940"
-          },
-          "direction": "backward",
-          "editorMode": "code",
-          "expr": "{container=\"gw_service\"} |~ \" 4[0-9][0-9] | 5[0-9][0-9] \"",
-          "queryType": "range",
-          "refId": "A"
-        }
-      ],
-      "title": "Erros de metodos",
       "transparent": true,
       "type": "table"
     }
@@ -603,12 +679,12 @@
     "list": []
   },
   "time": {
-    "from": "now-30m",
+    "from": "now-15m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Serviço Gateway",
-  "uid": "ad6s94g",
-  "version": 36
+  "title": "Serviço Payments",
+  "uid": "ad6s94d",
+  "version": 1
 }

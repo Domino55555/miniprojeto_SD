@@ -19,7 +19,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 2,
+  "id": 11,
   "links": [],
   "panels": [
     {
@@ -119,15 +119,15 @@
             "type": "prometheus",
             "uid": "af6ikdsy96bcwd"
           },
-          "editorMode": "builder",
-          "expr": "sum(rate(request_latency_seconds_orders_hist_sum{instance=\"orders_service:5600\"}[5m])) / (sum(rate(request_latency_seconds_orders_hist_count{instance=\"orders_service:5600\"}[5m])))",
+          "editorMode": "code",
+          "expr": "sum(rate(request_latency_seconds_gateway_hist_sum{instance=\"gw_service:5863\"}[$__rate_interval])) / (sum(rate(request_latency_seconds_gateway_hist_count{instance=\"gw_service:5863\"}[$__rate_interval])))",
           "instant": false,
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Lâtencia do Orders",
+      "title": "Lâtencia do GW",
       "transparent": true,
       "type": "timeseries"
     },
@@ -227,9 +227,9 @@
             "type": "prometheus",
             "uid": "af6ikdsy96bcwd"
           },
-          "editorMode": "builder",
+          "editorMode": "code",
           "exemplar": false,
-          "expr": "increase(flask_http_request_duration_seconds_count{path=\"/orders\"}[$__rate_interval])",
+          "expr": "sum(\n  increase(flask_http_request_duration_seconds_count{path=\"/\"}[$__rate_interval])\n) by (path)",
           "format": "time_series",
           "instant": false,
           "legendFormat": "{{method}} {{path}}",
@@ -241,26 +241,13 @@
             "type": "prometheus",
             "uid": "af6ikdsy96bcwd"
           },
-          "editorMode": "builder",
-          "expr": "increase(flask_http_request_duration_seconds_count{path=\"/orders/fields\"}[$__rate_interval])",
+          "editorMode": "code",
+          "expr": "sum by(path) (increase(flask_http_request_duration_seconds_count{path=\"/signup\"}[$__rate_interval]))",
           "hide": false,
           "instant": false,
           "legendFormat": "{{method}} {{path}}",
           "range": true,
-          "refId": "C"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "af6ikdsy96bcwd"
-          },
-          "editorMode": "builder",
-          "expr": "increase(flask_http_request_duration_seconds_count{path=\"/orders/cancel\"}[$__rate_interval])",
-          "hide": false,
-          "instant": false,
-          "legendFormat": "{{method}} {{path}}",
-          "range": true,
-          "refId": "D"
+          "refId": "E"
         },
         {
           "datasource": {
@@ -268,12 +255,38 @@
             "uid": "af6ikdsy96bcwd"
           },
           "editorMode": "code",
-          "expr": "increase(\n  flask_http_request_duration_seconds_count{\n    path=~\"/orders/.+\",\n    path!=\"/orders/cancel\",\n    path!=\"/orders/fields\",\n    path!=\"/orders/new\"\n  }[$__rate_interval]\n)",
+          "expr": "sum(\n  increase(flask_http_request_duration_seconds_count{path=\"/signup/confirm\"}[$__rate_interval])\n) by (path)\n",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "{{path}}",
+          "range": true,
+          "refId": "F"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "af6ikdsy96bcwd"
+          },
+          "editorMode": "code",
+          "expr": "sum by(path) (increase(flask_http_request_duration_seconds_count{path=\"/login\"}[$__rate_interval]))",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "{{path}}",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "af6ikdsy96bcwd"
+          },
+          "editorMode": "code",
+          "expr": "sum by(path) (increase(flask_http_request_duration_seconds_count{path=\"/logout\"}[$__rate_interval]))",
           "hide": false,
           "instant": false,
           "legendFormat": "{{method}} {{path}}",
           "range": true,
-          "refId": "B"
+          "refId": "G"
         }
       ],
       "title": "Número de requests",
@@ -428,7 +441,7 @@
           },
           "direction": "backward",
           "editorMode": "builder",
-          "expr": "{container=\"orders_service\"} |= `GET` or `POST`",
+          "expr": "{service_name=\"gw_service\"} |= `GET` or `POST`",
           "queryType": "range",
           "refId": "A"
         }
@@ -558,8 +571,8 @@
             "uid": "P8E80F9AEF21F6940"
           },
           "direction": "backward",
-          "editorMode": "builder",
-          "expr": "{container=\"orders_service\"} |~ ` 4[0-9][0-9] | 5[0-9][0-9] `",
+          "editorMode": "code",
+          "expr": "{container=\"gw_service\"} |~ \" 4[0-9][0-9] | 5[0-9][0-9] \"",
           "queryType": "range",
           "refId": "A"
         }
@@ -582,7 +595,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Serviço Orders",
-  "uid": "ad6s94e",
-  "version": 11
+  "title": "Serviço Gateway",
+  "uid": "ad6s94g",
+  "version": 1
 }

@@ -19,7 +19,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 3,
+  "id": 4,
   "links": [],
   "panels": [
     {
@@ -120,14 +120,14 @@
             "uid": "af6ikdsy96bcwd"
           },
           "editorMode": "builder",
-          "expr": "sum(rate(request_latency_seconds_payments_hist_sum{job=\"payments_service\"}[5m])) / (sum(rate(request_latency_seconds_payments_hist_count{job=\"payments_service\"}[5m])))",
+          "expr": "sum(rate(request_latency_seconds_notifications_hist_sum{job=\"notifications_service\"}[$__rate_interval])) / (sum(rate(request_latency_seconds_notifications_hist_count{job=\"notifications_service\"}[$__rate_interval])))",
           "instant": false,
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Lâtencia do Payments",
+      "title": "Lâtencia do Notifications",
       "transparent": true,
       "type": "timeseries"
     },
@@ -229,10 +229,10 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum by (path) (increase(flask_http_request_duration_seconds_count{path=\"/payments\"}[$__rate_interval])) / 2",
+          "expr": "sum by (path) (increase(flask_http_request_duration_seconds_count{path=\"/notifications/send_verification\"}[$__rate_interval])) / 1.2",
           "format": "time_series",
           "instant": false,
-          "legendFormat": "{{method}} {{path}}",
+          "legendFormat": "{{path}}",
           "range": true,
           "refId": "A"
         },
@@ -242,12 +242,38 @@
             "uid": "af6ikdsy96bcwd"
           },
           "editorMode": "code",
-          "expr": "increase(\n  flask_http_request_duration_seconds_count{\n    path=~\"/payments/.+\",\n    path!=\"/payments/me\"\n  }[$__rate_interval]\n)",
+          "expr": "sum by (path) (increase(flask_http_request_duration_seconds_count{path=\"/notifications/order_created\"}[$__rate_interval])) / 1.2",
           "hide": false,
           "instant": false,
-          "legendFormat": "{{method}} {{path}}",
+          "legendFormat": "{{path}}",
           "range": true,
           "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "af6ikdsy96bcwd"
+          },
+          "editorMode": "code",
+          "expr": "sum by (path) (increase(flask_http_request_duration_seconds_count{path=\"/notifications/status\"}[$__rate_interval])) / 1.2",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "{{path}}",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "af6ikdsy96bcwd"
+          },
+          "editorMode": "code",
+          "expr": "sum(\n  increase(flask_http_request_duration_seconds_count{path=~\"/notifications/me\"}[$__rate_interval])\n) by (path) / 1.2",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "{{path}}",
+          "range": true,
+          "refId": "D"
         }
       ],
       "title": "Número de requests",
@@ -259,27 +285,24 @@
         "type": "loki",
         "uid": "P8E80F9AEF21F6940"
       },
-      "description": "Logs do serviço GW, dos metodos importantes.",
+      "description": "Todos os pedidos processados iram mandar notifications via email. Estes logs são desse serviço.",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
           "custom": {
-            "align": "left",
+            "align": "auto",
             "cellOptions": {
               "type": "auto"
             },
-            "filterable": false,
             "footer": {
               "reducers": []
             },
             "hideFrom": {
               "viz": false
             },
-            "inspect": false,
-            "wrapHeaderText": false,
-            "wrapText": false
+            "inspect": false
           },
           "mappings": [],
           "thresholds": {
@@ -306,10 +329,6 @@
               {
                 "id": "custom.hideFrom.viz",
                 "value": true
-              },
-              {
-                "id": "custom.width",
-                "value": 191
               }
             ]
           },
@@ -328,7 +347,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "id"
+              "options": "labelTypes"
             },
             "properties": [
               {
@@ -345,7 +364,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 188
+                "value": 248
               }
             ]
           },
@@ -357,19 +376,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 544
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "labelTypes"
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom.viz",
-                "value": true
+                "value": 684
               }
             ]
           }
@@ -381,17 +388,10 @@
         "x": 0,
         "y": 8
       },
-      "id": 3,
+      "id": 5,
       "options": {
-        "cellHeight": "md",
-        "enablePagination": false,
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": true,
-            "displayName": "Time"
-          }
-        ]
+        "cellHeight": "sm",
+        "showHeader": true
       },
       "pluginVersion": "12.2.1",
       "targets": [
@@ -401,13 +401,13 @@
             "uid": "P8E80F9AEF21F6940"
           },
           "direction": "backward",
-          "editorMode": "builder",
-          "expr": "{container=\"payments_service\"} |= `GET` or `POST`",
+          "editorMode": "code",
+          "expr": "{container=\"notifications_service\"} |~ `\\[EMAIL ENVIADO\\]|4[0-9][0-9]|5[0-9][0-9]`",
           "queryType": "range",
           "refId": "A"
         }
       ],
-      "title": "Logs do serviço",
+      "title": "Notifications (Emails)",
       "transparent": true,
       "type": "table"
     },
@@ -533,12 +533,169 @@
           },
           "direction": "backward",
           "editorMode": "builder",
-          "expr": "{container=\"payments_service\"} |~ ` 4[0-9][0-9] | 5[0-9][0-9] `",
+          "expr": "{container=\"notifications_service\"} |~ ` 4[0-9][0-9] | 5[0-9][0-9] `",
           "queryType": "range",
           "refId": "A"
         }
       ],
       "title": "Erros de metodos",
+      "transparent": true,
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "P8E80F9AEF21F6940"
+      },
+      "description": "Logs do serviço GW, dos metodos importantes.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "left",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": false,
+            "footer": {
+              "reducers": []
+            },
+            "hideFrom": {
+              "viz": false
+            },
+            "inspect": false,
+            "wrapHeaderText": false,
+            "wrapText": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "labels"
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom.viz",
+                "value": true
+              },
+              {
+                "id": "custom.width",
+                "value": 191
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tsNs"
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom.viz",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "id"
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom.viz",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 188
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Line"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 544
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "labelTypes"
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom.viz",
+                "value": true
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 6,
+        "y": 16
+      },
+      "id": 3,
+      "options": {
+        "cellHeight": "md",
+        "enablePagination": false,
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Time"
+          }
+        ]
+      },
+      "pluginVersion": "12.2.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "P8E80F9AEF21F6940"
+          },
+          "direction": "backward",
+          "editorMode": "builder",
+          "expr": "{container=\"notifications_service\"} |= `GET` or `POST`",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Logs do serviço",
       "transparent": true,
       "type": "table"
     }
@@ -556,7 +713,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Serviço Payments",
-  "uid": "ad6s94d",
-  "version": 7
+  "title": "Serviço Notifications",
+  "uid": "ad6s94c",
+  "version": 5
 }

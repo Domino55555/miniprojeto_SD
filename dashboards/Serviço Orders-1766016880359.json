@@ -19,7 +19,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 4,
+  "id": 12,
   "links": [],
   "panels": [
     {
@@ -120,14 +120,14 @@
             "uid": "af6ikdsy96bcwd"
           },
           "editorMode": "code",
-          "expr": "sum(rate(request_latency_seconds_notifications_hist_sum{job=\"notifications_service\"}[5m])) / (sum(rate(request_latency_seconds_notifications_hist_count{job=\"notifications_service\"}[5m])))",
+          "expr": "sum(rate(request_latency_seconds_orders_hist_sum{instance=\"orders_service:5600\"}[$__rate_interval])) / (sum(rate(request_latency_seconds_orders_hist_count{instance=\"orders_service:5600\"}[$__rate_interval])))",
           "instant": false,
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Lâtencia do Notifications",
+      "title": "Lâtencia do Orders",
       "transparent": true,
       "type": "timeseries"
     },
@@ -229,10 +229,10 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum by (path) (increase(flask_http_request_duration_seconds_count{path=\"/notifications/send_verification\"}[$__rate_interval]))",
+          "expr": "sum(\n  increase(flask_http_request_duration_seconds_count{path=\"/orders\"}[$__rate_interval])\n) by (path) / 1.2",
           "format": "time_series",
           "instant": false,
-          "legendFormat": "{{method}} {{path}}",
+          "legendFormat": "{{path}}",
           "range": true,
           "refId": "A"
         },
@@ -242,23 +242,10 @@
             "uid": "af6ikdsy96bcwd"
           },
           "editorMode": "code",
-          "expr": "sum by (path) (increase(flask_http_request_duration_seconds_count{path=\"/notifications/order_created\"}[$__rate_interval]))",
+          "expr": "sum(\n  increase(flask_http_request_duration_seconds_count{path=\"/orders/fields\"}[$__rate_interval]) / 2.4\n) by (path)\n",
           "hide": false,
           "instant": false,
-          "legendFormat": "{{method}} {{path}}",
-          "range": true,
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "af6ikdsy96bcwd"
-          },
-          "editorMode": "code",
-          "expr": "sum by (path) (increase(flask_http_request_duration_seconds_count{path=\"/notifications/status\"}[$__rate_interval]))",
-          "hide": false,
-          "instant": false,
-          "legendFormat": "{{method}} {{path}}",
+          "legendFormat": "{{path}}",
           "range": true,
           "refId": "C"
         },
@@ -268,12 +255,38 @@
             "uid": "af6ikdsy96bcwd"
           },
           "editorMode": "code",
-          "expr": "increase(\n  flask_http_request_duration_seconds_count{\n    path=~\"/notifications/.+\",\n    path!=\"/notifications/me\",\n    path!=\"/notifications/send_verification\",\n    path!=\"/notifications/status\",\n    path!=\"/notifications/order_created\"\n  }[$__rate_interval]\n)",
+          "expr": "sum(\n  increase(flask_http_request_duration_seconds_count{path=\"/orders/cancel\"}[$__rate_interval])\n) by (path) / 1.2\n",
           "hide": false,
           "instant": false,
-          "legendFormat": "{{method}} {{path}}",
+          "legendFormat": "{{path}}",
           "range": true,
           "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "af6ikdsy96bcwd"
+          },
+          "editorMode": "code",
+          "expr": "sum(\n  increase(\n    flask_http_request_duration_seconds_count{\n      path=~\"/orders/me\",\n    }[$__rate_interval]\n  ) / 1.2\n) by (path)\n",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "{{path}}",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "af6ikdsy96bcwd"
+          },
+          "editorMode": "code",
+          "expr": "sum(\n  increase(flask_http_request_duration_seconds_count{path=\"/orders/new\"}[$__rate_interval])\n) by (path) / 1.2",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "{{path}}",
+          "range": true,
+          "refId": "E"
         }
       ],
       "title": "Número de requests",
@@ -285,27 +298,21 @@
         "type": "loki",
         "uid": "P8E80F9AEF21F6940"
       },
-      "description": "Logs do serviço GW, dos metodos importantes.",
+      "description": "Logs das orders colocadas.",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
           "custom": {
-            "align": "left",
+            "align": "auto",
             "cellOptions": {
               "type": "auto"
             },
-            "filterable": false,
             "footer": {
               "reducers": []
             },
-            "hideFrom": {
-              "viz": false
-            },
-            "inspect": false,
-            "wrapHeaderText": false,
-            "wrapText": false
+            "inspect": false
           },
           "mappings": [],
           "thresholds": {
@@ -332,10 +339,6 @@
               {
                 "id": "custom.hideFrom.viz",
                 "value": true
-              },
-              {
-                "id": "custom.width",
-                "value": 191
               }
             ]
           },
@@ -354,7 +357,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "id"
+              "options": "labelTypes"
             },
             "properties": [
               {
@@ -371,7 +374,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 188
+                "value": 255
               }
             ]
           },
@@ -383,19 +386,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 544
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "labelTypes"
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom.viz",
-                "value": true
+                "value": 597
               }
             ]
           }
@@ -407,17 +398,10 @@
         "x": 0,
         "y": 8
       },
-      "id": 3,
+      "id": 5,
       "options": {
-        "cellHeight": "md",
-        "enablePagination": false,
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": true,
-            "displayName": "Time"
-          }
-        ]
+        "cellHeight": "sm",
+        "showHeader": true
       },
       "pluginVersion": "12.2.1",
       "targets": [
@@ -427,13 +411,13 @@
             "uid": "P8E80F9AEF21F6940"
           },
           "direction": "backward",
-          "editorMode": "builder",
-          "expr": "{container=\"notifications_service\"} |= `GET` or `POST`",
+          "editorMode": "code",
+          "expr": "{container=\"orders_service\"} |~ `\\[CRIAR ENCOMENDA\\]| 4[0-9][0-9]| 5[0-9][0-9]`",
           "queryType": "range",
           "refId": "A"
         }
       ],
-      "title": "Logs do serviço",
+      "title": "Orders",
       "transparent": true,
       "type": "table"
     },
@@ -559,12 +543,169 @@
           },
           "direction": "backward",
           "editorMode": "builder",
-          "expr": "{container=\"notifications_service\"} |~ ` 4[0-9][0-9] | 5[0-9][0-9] `",
+          "expr": "{container=\"orders_service\"} |~ ` 4[0-9][0-9] | 5[0-9][0-9] `",
           "queryType": "range",
           "refId": "A"
         }
       ],
       "title": "Erros de metodos",
+      "transparent": true,
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "P8E80F9AEF21F6940"
+      },
+      "description": "Logs do serviço GW, dos metodos importantes.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "left",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": false,
+            "footer": {
+              "reducers": []
+            },
+            "hideFrom": {
+              "viz": false
+            },
+            "inspect": false,
+            "wrapHeaderText": false,
+            "wrapText": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "labels"
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom.viz",
+                "value": true
+              },
+              {
+                "id": "custom.width",
+                "value": 191
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tsNs"
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom.viz",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "id"
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom.viz",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 188
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Line"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 544
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "labelTypes"
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom.viz",
+                "value": true
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 6,
+        "y": 16
+      },
+      "id": 3,
+      "options": {
+        "cellHeight": "md",
+        "enablePagination": false,
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Time"
+          }
+        ]
+      },
+      "pluginVersion": "12.2.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "P8E80F9AEF21F6940"
+          },
+          "direction": "backward",
+          "editorMode": "builder",
+          "expr": "{container=\"orders_service\"} |= `GET` or `POST`",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Logs do serviço",
       "transparent": true,
       "type": "table"
     }
@@ -577,12 +718,12 @@
     "list": []
   },
   "time": {
-    "from": "now-30m",
+    "from": "now-15m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Serviço Notifications",
-  "uid": "ad6s94c",
-  "version": 4
+  "title": "Serviço Orders",
+  "uid": "ad6s94e",
+  "version": 1
 }
