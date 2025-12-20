@@ -19,7 +19,6 @@ Microserviços Principais
     - Métricas para Prometheus
 
 - Orders Service
-  - Porta: 5600
   - Objetivo: Gestão de encomendas
   - Responsabilidades:
     - Criar e validar encomendas
@@ -34,7 +33,6 @@ Microserviços Principais
     - Métricas para Prometheus
 
 - Payments Service
-  - Porta: 5700
   - Objetivo: Processamento de pagamentos
   - Responsabilidades:
     - Receber pedidos de pagamento
@@ -49,7 +47,6 @@ Microserviços Principais
     - Métricas para Prometheus
 
 - Notifications Service
-  - Porta: 5800
   - Objetivo: Envio de notificações e e-mails
   - Responsabilidades:
     - Enviar códigos de verificação
